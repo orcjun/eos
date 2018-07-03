@@ -35,10 +35,14 @@
 		printf "\\n\\tPlease cd into directory %s to run this script.\\n \\tExiting now.\\n\\n" "${CWD}"
 		exit 1
 	fi
+	if [ -f "${PWD}/CMakeCache.txt" ]; then
+		printf "\\n\\tPlease remove file %s/CMakeCache.txt before building EOSIO.\\n \\tExiting now.\\n\\n" "${PWD}"
+		exit 1
+	fi
 
    	function usage()
    	{ 
-		printf "\\tUsage: %s [Build Option -o <Debug|Release|RelWithDebInfo|MinSizeRel>] [CodeCoverage -c ] [Doxygen -d]\\n\\n" "$0" 1>&2
+		printf "\\tUsage: %s \\n\\t[Build Option -o <Debug|Release|RelWithDebInfo|MinSizeRel>] \\n\\t[CodeCoverage -c ] \\n\\t[Doxygen -d] \\n\\t[CoreSymbolName -s <1-7 characters>]\\n\\n" "$0" 1>&2
 		exit 1
 	}
 
@@ -48,6 +52,7 @@
 	DISK_MIN=20
 	DOXYGEN=false
 	ENABLE_COVERAGE_TESTING=false
+	CORE_SYMBOL_NAME="SYS"
 	TEMP_DIR="/tmp"
 	TIME_BEGIN=$( date -u +%s )
 	VERSION=1.2
@@ -57,7 +62,7 @@
 	txtrst=$(tput sgr0)
 
 	if [ $# -ne 0 ]; then
-		while getopts ":cdo:" opt; do
+		while getopts ":cdo:s:" opt; do
 			case "${opt}" in
 				o )
 					options=( "Debug" "Release" "RelWithDebInfo" "MinSizeRel" )
@@ -74,6 +79,15 @@
 				;;
 				d )
 					DOXYGEN=true
+				;;
+				s)
+					if [ "${#OPTARG}" -gt 6 ] || [ -z "${#OPTARG}" ]; then
+						printf "\\n\\tInvalid argument: %s\\n" "${OPTARG}" 1>&2
+						usage
+						exit 1
+					else
+						CORE_SYMBOL_NAME="${OPTARG}"
+					fi
 				;;
 				\? )
 					printf "\\n\\tInvalid Option: %s\\n" "-${OPTARG}" 1>&2
@@ -111,7 +125,7 @@
 	printf "\\t%s\\n" "$( date -u )"
 	printf "\\tUser: %s\\n" "$( whoami )"
 	printf "\\tgit head id: %s\\n" "$( cat .git/refs/heads/master )"
-	printf "\\tCurrent branch: %s\\n" "$( git branch | grep \* )"
+	printf "\\tCurrent branch: %s\\n" "$( git rev-parse --abbrev-ref HEAD )"
 	printf "\\n\\tARCHITECTURE: %s\\n" "${ARCH}"
 
 	if [ "$ARCH" == "Linux" ]; then
@@ -182,7 +196,7 @@
 				exit 1
 		esac
 
-		export BOOST_ROOT="${HOME}/opt/boost_1_66_0"
+		export BOOST_ROOT="${HOME}/opt/boost"
 		OPENSSL_ROOT_DIR=/usr/include/openssl
 		WASM_ROOT="${HOME}/opt/wasm"
 	fi
@@ -198,7 +212,7 @@
 
 	. "$FILE"
 
-	printf "\\n\\n>>>>>>>> ALL dependencies sucessfully found or installed . Installing EOS.IO\\n\\n"
+	printf "\\n\\n>>>>>>>> ALL dependencies sucessfully found or installed . Installing EOSIO\\n\\n"
 	printf ">>>>>>>> CMAKE_BUILD_TYPE=%s\\n" "${CMAKE_BUILD_TYPE}"
 	printf ">>>>>>>> ENABLE_COVERAGE_TESTING=%s\\n" "${ENABLE_COVERAGE_TESTING}"
 	printf ">>>>>>>> DOXYGEN=%s\\n\\n" "${DOXYGEN}"
@@ -222,7 +236,7 @@
 	fi
 	
 	if ! "${CMAKE}" -DCMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE}" -DCMAKE_CXX_COMPILER="${CXX_COMPILER}" \
-		-DCMAKE_C_COMPILER="${C_COMPILER}" -DWASM_ROOT="${WASM_ROOT}" \
+		-DCMAKE_C_COMPILER="${C_COMPILER}" -DWASM_ROOT="${WASM_ROOT}" -DCORE_SYMBOL_NAME="${CORE_SYMBOL_NAME}" \
 		-DOPENSSL_ROOT_DIR="${OPENSSL_ROOT_DIR}" -DBUILD_MONGO_DB_PLUGIN=true \
 		-DENABLE_COVERAGE_TESTING="${ENABLE_COVERAGE_TESTING}" -DBUILD_DOXYGEN="${DOXYGEN}" ..
 	then
@@ -247,16 +261,17 @@
 	printf "\t| (____/\| (___) |/\____) |___) (___| (___) |\n"
 	printf "\t(_______/(_______)\_______)\_______/(_______)\n${txtrst}"
 
-	printf "\\n\\tEOS.IO has been successfully built. %d:%d:%d\\n\\n" $(($TIME_END/3600)) $(($TIME_END%3600/60)) $(($TIME_END%60))
+	printf "\\n\\tEOSIO has been successfully built. %02d:%02d:%02d\\n\\n" $(($TIME_END/3600)) $(($TIME_END%3600/60)) $(($TIME_END%60))
 	printf "\\tTo verify your installation run the following commands:\\n"
 	
 	print_instructions
 
 	printf "\\tFor more information:\\n"
-	printf "\\tEOS.IO website: https://eos.io\\n"
-	printf "\\tEOS.IO Telegram channel @ https://t.me/EOSProject\\n"
-	printf "\\tEOS.IO resources: https://eos.io/resources/\\n"
-	printf "\\tEOS.IO wiki: https://github.com/EOSIO/eos/wiki\\n\\n\\n"
+	printf "\\tEOSIO website: https://eos.io\\n"
+	printf "\\tEOSIO Telegram channel @ https://t.me/EOSProject\\n"
+	printf "\\tEOSIO resources: https://eos.io/resources/\\n"
+	printf "\\tEOSIO Stack Exchange: https://eosio.stackexchange.com\\n"
+	printf "\\tEOSIO wiki: https://github.com/EOSIO/eos/wiki\\n\\n\\n"
 				
 	if [ "x${EOSIO_BUILD_PACKAGE}" != "x" ]; then
 	  # Build eos.io package
