@@ -10,9 +10,9 @@ class hello : public eosio::contract {
          print( "Hello, ", name{user} );
       }
 
-      void addFunction( account_name user ) {
-         print( "Hello, ", name{user} );
+      void bye( account_name user ) {
+         print( "Bye, ", name{user} );
       }
 };
 
-EOSIO_ABI( hello, (hi) (addFunction))
+EOSIO_ABI( hello, (hi) (bye))
